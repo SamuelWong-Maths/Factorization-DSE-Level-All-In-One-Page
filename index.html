@@ -1,0 +1,432 @@
+<!DOCTYPE html>
+<html lang="zh-HK">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Factorization Practice | 因式分解全練習</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        window.MathJax = {
+            tex: { inlineMath: [['\\(', '\\)']], displayMath: [['\\[', '\\]']] },
+            startup: { typeset: false }
+        };
+    </script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/3.2.2/es5/tex-mml-chtml.min.js"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        html, body { 
+            height: 100%; 
+            margin: 0; 
+            padding: 0; 
+            overflow: hidden; 
+        }
+        body { 
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
+            background-color: #f3f4f6; 
+            touch-action: manipulation; 
+            display: flex;
+            flex-direction: column;
+        }
+        .math-display { font-size: 1.15rem; margin: 0.5rem 0; text-align: left; padding-left: 0.5rem; }
+        .math-step { font-size: 1.05rem; margin: 0.25rem 0; color: #4b5563; }
+        .keyboard-btn { transition: all 0.1s; user-select: none; }
+        .keyboard-btn:active { transform: scale(0.95); background-color: #e5e7eb; }
+        .input-box { font-family: 'Courier New', Courier, monospace; letter-spacing: 1px; text-align: center; font-size: 1.125rem; }
+        .input-active { background-color: #eff6ff; border-color: #3b82f6; }
+        .correct-anim { animation: pulseGreen 0.5s; background-color: #dcfce7 !important; }
+        .wrong-anim { animation: shakeRed 0.5s; background-color: #fee2e2 !important; }
+        @keyframes pulseGreen { 0% { box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.7); } 70% { box-shadow: 0 0 0 10px rgba(34, 197, 94, 0); } 100% { box-shadow: 0 0 0 0 rgba(34, 197, 94, 0); } }
+        @keyframes shakeRed { 0%, 100% { transform: translateX(0); } 25% { transform: translateX(-5px); border-color: red; } 75% { transform: translateX(5px); border-color: red; } }
+        .fraction-container { display: inline-flex; flex-direction: column; align-items: center; vertical-align: middle; margin: 0 0.5rem; }
+        .fraction-line { width: 100%; height: 2px; background-color: #1f2937; margin: 2px 0; }
+        main {
+            -webkit-overflow-scrolling: touch; /* iPad 滾動優化 */
+        }
+    </style>
+</head>
+<body class="flex flex-col overflow-hidden">
+
+    <!-- Header 頂部固定欄 -->
+    <header class="bg-white shadow-sm p-3 flex justify-between items-center z-10 shrink-0 flex-wrap gap-2">
+        <div class="flex items-center gap-3 flex-wrap">
+            <div class="flex flex-col">
+                <label class="text-xs text-gray-500 font-bold">日期 DATE</label>
+                <input type="date" id="dateInput" class="border-b border-gray-300 focus:outline-none focus:border-blue-500 pb-1 text-sm">
+            </div>
+            <div class="flex flex-col">
+                <label class="text-xs text-gray-500 font-bold">姓名 NAME</label>
+                <input type="text" id="nameInput" placeholder="輸入姓名..." class="border-b border-gray-300 focus:outline-none focus:border-blue-500 pb-1 w-24 md:w-32 text-sm">
+            </div>
+            <div class="flex flex-col">
+                <label class="text-xs text-gray-500 font-bold">班別 CLASS</label>
+                <input type="text" id="classInput" placeholder="例: 3A" class="border-b border-gray-300 focus:outline-none focus:border-blue-500 pb-1 w-16 text-sm">
+            </div>
+            <div class="flex flex-col">
+                <label class="text-xs text-gray-500 font-bold">學號 NO.</label>
+                <input type="number" id="classNoInput" placeholder="例: 15" class="border-b border-gray-300 focus:outline-none focus:border-blue-500 pb-1 w-16 text-sm">
+            </div>
+            <button id="lockBtn" onclick="lockProfile()" class="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1.5 rounded-lg font-bold flex items-center shadow text-sm whitespace-nowrap">
+                <i class="fas fa-lock mr-1"></i> 鎖定 Lock
+            </button>
+        </div>
+        
+        <div class="flex items-center space-x-6">
+            <div class="text-center">
+                <div class="text-xs text-gray-500 font-bold">總分 SCORE</div>
+                <div class="text-2xl font-black text-blue-600 leading-none" id="scoreDisplay">0</div>
+            </div>
+            <div class="hidden md:block text-right">
+                <div class="text-xs text-gray-400">所有題目 (Type I - VII)</div>
+                <div class="text-[10px] text-gray-400">All Topics Combined</div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content 中間滾動題目區域 -->
+    <main class="flex-1 overflow-y-auto p-4 bg-gray-50 flex justify-center">
+        <div id="questionsContainer" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 w-full max-w-7xl content-start pb-20">
+            <!-- Questions injected here -->
+        </div>
+    </main>
+
+    <!-- Controls & Keyboard 底部固定鍵盤欄（內含防 Google 遮擋之 150px 底部內距） -->
+    <footer class="bg-white border-t border-gray-200 p-3 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)] z-10 shrink-0" style="padding-bottom: 150px;">
+        <div class="max-w-7xl mx-auto flex flex-col space-y-3">
+            <div class="flex justify-between items-center">
+                <button onclick="generateQuestions()" class="bg-emerald-500 hover:bg-emerald-600 text-white px-4 py-2 rounded-xl font-bold w-full md:w-auto shadow-md flex items-center justify-center text-sm">
+                    <i class="fas fa-sync-alt mr-2"></i> 重新生成所有題目 Generate All New
+                </button>
+                <div class="hidden sm:block text-xs text-gray-500 font-bold">點擊輸入框後使用下方鍵盤作答</div>
+            </div>
+            
+            <!-- Custom Keyboard -->
+            <div class="grid grid-cols-12 gap-1.5" id="keyboard">
+                <button class="keyboard-btn bg-gray-100 border border-gray-300 rounded-lg py-2 font-bold text-lg" onclick="typeChar('1')">1</button>
+                <button class="keyboard-btn bg-gray-100 border border-gray-300 rounded-lg py-2 font-bold text-lg" onclick="typeChar('2')">2</button>
+                <button class="keyboard-btn bg-gray-100 border border-gray-300 rounded-lg py-2 font-bold text-lg" onclick="typeChar('3')">3</button>
+                <button class="keyboard-btn bg-gray-100 border border-gray-300 rounded-lg py-2 font-bold text-lg" onclick="typeChar('4')">4</button>
+                <button class="keyboard-btn bg-gray-100 border border-gray-300 rounded-lg py-2 font-bold text-lg" onclick="typeChar('5')">5</button>
+                <button class="keyboard-btn bg-gray-100 border border-gray-300 rounded-lg py-2 font-bold text-lg" onclick="typeChar('6')">6</button>
+                <button class="keyboard-btn bg-gray-100 border border-gray-300 rounded-lg py-2 font-bold text-lg" onclick="typeChar('7')">7</button>
+                <button class="keyboard-btn bg-gray-100 border border-gray-300 rounded-lg py-2 font-bold text-lg" onclick="typeChar('8')">8</button>
+                <button class="keyboard-btn bg-gray-100 border border-gray-300 rounded-lg py-2 font-bold text-lg" onclick="typeChar('9')">9</button>
+                <button class="keyboard-btn bg-gray-100 border border-gray-300 rounded-lg py-2 font-bold text-lg" onclick="typeChar('0')">0</button>
+                <button class="keyboard-btn bg-purple-50 border border-purple-300 rounded-lg py-2 font-bold text-lg" onclick="typeChar('²')">²</button>
+                <button class="keyboard-btn bg-red-100 border border-red-300 text-red-700 rounded-lg py-2 font-bold text-sm" onclick="deleteChar()"><i class="fas fa-backspace"></i></button>
+                
+                <button class="keyboard-btn bg-blue-50 border border-blue-200 text-blue-800 rounded-lg py-2 font-bold text-lg italic" onclick="typeChar('x')">x</button>
+                <button class="keyboard-btn bg-blue-50 border border-blue-200 text-blue-800 rounded-lg py-2 font-bold text-lg italic" onclick="typeChar('y')">y</button>
+                <button class="keyboard-btn bg-blue-50 border border-blue-200 text-blue-800 rounded-lg py-2 font-bold text-lg italic" onclick="typeChar('m')">m</button>
+                <button class="keyboard-btn bg-blue-50 border border-blue-200 text-blue-800 rounded-lg py-2 font-bold text-lg italic" onclick="typeChar('k')">k</button>
+                <button class="keyboard-btn bg-blue-50 border border-blue-200 text-blue-800 rounded-lg py-2 font-bold text-lg italic" onclick="typeChar('a')">a</button>
+                <button class="keyboard-btn bg-blue-50 border border-blue-200 text-blue-800 rounded-lg py-2 font-bold text-lg italic" onclick="typeChar('b')">b</button>
+                <button class="keyboard-btn bg-yellow-50 border border-yellow-300 rounded-lg py-2 font-bold text-lg" onclick="typeChar('+')">+</button>
+                <button class="keyboard-btn bg-yellow-50 border border-yellow-300 rounded-lg py-2 font-bold text-lg" onclick="typeChar('-')">-</button>
+                <button class="keyboard-btn bg-purple-50 border border-purple-300 rounded-lg py-2 font-bold text-lg" onclick="typeChar('(')">(</button>
+                <button class="keyboard-btn bg-purple-50 border border-purple-300 rounded-lg py-2 font-bold text-lg" onclick="typeChar(')')">)</button>
+                <button class="keyboard-btn col-span-2 bg-gray-200 border border-gray-400 rounded-lg py-2 font-bold text-sm" onclick="moveFocus()">Next <i class="fas fa-arrow-right"></i></button>
+            </div>
+        </div>
+    </footer>
+
+    <!-- 自訂 Alert Modal (解決 iframe 沙盒環境原生 alert() 可能遭拒絕的問題) -->
+    <div id="customAlert" class="fixed inset-0 bg-black/50 z-50 flex items-center justify-center hidden">
+        <div class="bg-white rounded-xl shadow-lg p-6 max-w-sm w-full mx-4 text-center">
+            <i class="fas fa-exclamation-circle text-amber-500 text-4xl mb-3"></i>
+            <p id="customAlertMsg" class="text-gray-800 font-semibold mb-4 text-sm md:text-base"></p>
+            <button onclick="closeAlert()" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-6 rounded-lg transition-colors text-sm w-full shadow">
+                確定 OK
+            </button>
+        </div>
+    </div>
+
+    <script>
+        // --- State ---
+        let score = 0;
+        let currentQuestions = [];
+        let activeInputId = null;
+
+        // --- Math Helpers ---
+        const randInt = (min, max) => Math.floor(Math.random() * (max - min + 1)) + min;
+        const gcd = (a, b) => b === 0 ? Math.abs(a) : gcd(b, a % b);
+        
+        function fmtTerm(coeff, vars, isFirst = false) {
+            if (coeff === 0) return "";
+            let sign = coeff > 0 ? (isFirst ? "" : "+") : "-";
+            let absCoeff = Math.abs(coeff);
+            let numStr = (absCoeff === 1 && vars !== "") ? "" : absCoeff;
+            return `${sign}${numStr}${vars}`;
+        }
+
+        function fmtAnsTerm(coeff, vars, isFirst = false) {
+            if (coeff === 0) return "";
+            let sign = coeff > 0 ? (isFirst ? "" : "+") : "-";
+            let absCoeff = Math.abs(coeff);
+            let numStr = (absCoeff === 1 && vars !== "") ? "" : absCoeff;
+            return `${sign}${numStr}${vars}`;
+        }
+
+        // --- Question Generators (Type I - VII) ---
+        function generateType1() {
+            let a = randInt(2, 5), b = randInt(-5, -1), c = randInt(2, 5), d = randInt(1, 5);
+            while(gcd(a, Math.abs(b)) !== 1) b = randInt(-5, -1);
+            while(gcd(c, d) !== 1) d = randInt(1, 5);
+            let term1 = fmtTerm(a*c, "xy", true), term2 = fmtTerm(b*c, "y", false), term3 = fmtTerm(a*d, "x", false), term4 = fmtTerm(b*d, "", false);
+            let cStr = c === 1 ? "" : c;
+            return { type: "Type I (Grouping)", qText: "", parts: [
+                { label: '(a)', qText: `\\( ${term1} ${term2} \\)`, ans: `${cStr}y(${fmtAnsTerm(a,"x",true)}${fmtAnsTerm(b,"",false)})`, steps: [`\\( = ${cStr}y(${fmtTerm(a,"x",true)} ${fmtTerm(b,"",false)}) \\)`], scored: false },
+                { label: '(b)', qText: `\\( ${term1} ${term2} ${term3} ${term4} \\)`, ans: `(${fmtAnsTerm(a,"x",true)}${fmtAnsTerm(b,"",false)})(${fmtAnsTerm(c,"y",true)}${fmtAnsTerm(d,"",false)})`, steps: [`\\( = ${cStr}y(${fmtTerm(a,"x",true)} ${fmtTerm(b,"",false)}) ${fmtTerm(d,"",false)}(${fmtTerm(a,"x",true)} ${fmtTerm(b,"",false)}) \\)`, `\\( = (${fmtTerm(a,"x",true)} ${fmtTerm(b,"",false)})(${fmtTerm(c,"y",true)} ${fmtTerm(d,"",false)}) \\)`], scored: false }
+            ]};
+        }
+
+        function generateType2() {
+            let a = randInt(2, 6) * (Math.random() > 0.5 ? 1 : -1), b = randInt(2, 6) * (Math.random() > 0.5 ? 1 : -1);
+            return { type: "Type II (Perfect Square)", qText: "", parts: [
+                { label: '(a)', qText: `\\( x^2 ${fmtTerm(2*a, "xy", false)} ${fmtTerm(a*a, "y^2", false)} \\)`, ans: `(x${fmtAnsTerm(a,"y",false)})²`, steps: [`\\( = (x ${fmtTerm(a,"y",false)})^2 \\)`], scored: false },
+                { label: '(b)', qText: `\\( x^2 ${fmtTerm(2*a, "xy", false)} ${fmtTerm(a*a, "y^2", false)} ${fmtTerm(b, "x", false)} ${fmtTerm(b*a, "y", false)} \\)`, ans: `(x${fmtAnsTerm(a,"y",false)})(x${fmtAnsTerm(a,"y",false)}${fmtAnsTerm(b,"",false)})`, steps: [`\\( = (x ${fmtTerm(a,"y",false)})^2 ${fmtTerm(b,"",false)}(x ${fmtTerm(a,"y",false)}) \\)`, `\\( = (x ${fmtTerm(a,"y",false)})(x ${fmtTerm(a,"y",false)} ${fmtTerm(b,"",false)}) \\)`], scored: false }
+            ]};
+        }
+
+        function generateType3() {
+            let a = randInt(2, 6), b = randInt(2, 6);
+            while(gcd(a, b) !== 1) b = randInt(2, 6);
+            let c = randInt(2, 5) * (Math.random() > 0.5 ? 1 : -1);
+            return { type: "Type III (Diff of Squares)", qText: "", parts: [
+                { label: '(a)', qText: `\\( ${a*a}x^2 - ${b*b}y^2 \\)`, ans: `(${a}x+${b}y)(${a}x-${b}y)`, steps: [`\\( = (${a}x + ${b}y)(${a}x - ${b}y) \\)`], scored: false },
+                { label: '(b)', qText: `\\( ${a*a}x^2 - ${b*b}y^2 ${fmtTerm(c*a, "x", false)} ${fmtTerm(c*b, "y", false)} \\)`, ans: `(${a}x+${b}y)(${a}x-${b}y${fmtAnsTerm(c,"",false)})`, steps: [`\\( = (${a}x + ${b}y)(${a}x - ${b}y) ${fmtTerm(c,"",false)}(${a}x + ${b}y) \\)`, `\\( = (${a}x + ${b}y)(${a}x - ${b}y ${fmtTerm(c,"",false)}) \\)`], scored: false }
+            ]};
+        }
+
+        function generateType4() {
+            let a = randInt(2, 5), b = randInt(2, 5) * (Math.random() > 0.5 ? 1 : -1);
+            while(gcd(a, Math.abs(b)) !== 1) b = randInt(2, 5) * (Math.random() > 0.5 ? 1 : -1);
+            let c = randInt(2, 5) * (Math.random() > 0.5 ? 1 : -1);
+            return { type: "Type IV (Advanced PS)", qText: "", parts: [
+                { label: '(a)', qText: `\\( ${a*a}x^2 ${fmtTerm(2*a*b, "xy", false)} ${fmtTerm(b*b, "y^2", false)} \\)`, ans: `(${a}x${fmtAnsTerm(b,"y",false)})²`, steps: [`\\( = (${a}x ${fmtTerm(b,"y",false)})^2 \\)`], scored: false },
+                { label: '(b)', qText: `\\( ${a*a}x^2 ${fmtTerm(2*a*b, "xy", false)} ${fmtTerm(b*b, "y^2", false)} ${fmtTerm(c*a, "x", false)} ${fmtTerm(c*b, "y", false)} \\)`, ans: `(${a}x${fmtAnsTerm(b,"y",false)})(${a}x${fmtAnsTerm(b,"y",false)}${fmtAnsTerm(c,"",false)})`, steps: [`\\( = (${a}x ${fmtTerm(b,"y",false)})^2 ${fmtTerm(c,"",false)}(${a}x ${fmtTerm(b,"y",false)}) \\)`, `\\( = (${a}x ${fmtTerm(b,"y",false)})(${a}x ${fmtTerm(b,"y",false)} ${fmtTerm(c,"",false)}) \\)`], scored: false }
+            ]};
+        }
+
+        // --- Question Generator for Type V, VI, VII ---
+        function generateType5() {
+            let a = randInt(3, 8), b = randInt(-8, -2);
+            while(a + b === 0) b = randInt(-8, -2);
+            let k = randInt(2, 5) * (Math.random() > 0.5 ? 1 : -1);
+            return { type: "Type V (Cross Method 1)", qText: "", parts: [
+                { label: '(a)', qText: `\\( x^2 ${fmtTerm(a+b, "x", false)} ${fmtTerm(a*b, "", false)} \\)`, ans: `(x${fmtAnsTerm(a,"",false)})(x${fmtAnsTerm(b,"",false)})`, steps: [`\\( = (x ${fmtTerm(a,"",false)})(x ${fmtTerm(b,"",false)}) \\)`], scored: false },
+                { label: '(b)', qText: `\\( x^2 ${fmtTerm(a+b, "x", false)} ${fmtTerm(a*b, "", false)} ${fmtTerm(k, "x", false)} ${fmtTerm(a*k, "", false)} \\)`, ans: `(x${fmtAnsTerm(a,"",false)})(x${fmtAnsTerm(b,"",false)}${fmtAnsTerm(k,"",false)})`, steps: [`\\( = (x ${fmtTerm(a,"",false)})(x ${fmtTerm(b,"",false)}) ${fmtTerm(k,"",false)}(x ${fmtTerm(a,"",false)}) \\)`, `\\( = (x ${fmtTerm(a,"",false)})(x ${fmtTerm(b,"",false)} ${fmtTerm(k,"",false)}) \\)`], scored: false }
+            ]};
+        }
+
+        function generateType6() {
+            let a = randInt(2, 5), b = randInt(1, 4) * (Math.random() > 0.5 ? 1 : -1), c = randInt(2, 5), d = randInt(1, 4) * (Math.random() > 0.5 ? 1 : -1);
+            while(gcd(a, Math.abs(b)) !== 1) b = randInt(1, 4) * (Math.random() > 0.5 ? 1 : -1);
+            while(gcd(c, Math.abs(d)) !== 1) d = randInt(1, 4) * (Math.random() > 0.5 ? 1 : -1);
+            let w = randInt(2, 4) * (Math.random() > 0.5 ? 1 : -1);
+            return { type: "Type VI (Cross Method 2)", qText: "", parts: [
+                { label: '(a)', qText: `\\( ${a*c}x^2 ${fmtTerm(a*d+b*c, "xy", false)} ${fmtTerm(b*d, "y^2", false)} \\)`, ans: `(${a}x${fmtAnsTerm(b,"y",false)})(${c}x${fmtAnsTerm(d,"y",false)})`, steps: [`\\( = (${a}x ${fmtTerm(b,"y",false)})(${c}x ${fmtTerm(d,"y",false)}) \\)`], scored: false },
+                { label: '(b)', qText: `\\( ${fmtTerm(w*c, "mx", true)} ${fmtTerm(w*d, "my", false)} + ${a*c}x^2 ${fmtTerm(a*d+b*c, "xy", false)} ${fmtTerm(b*d, "y^2", false)} \\)`, ans: `(${c}x${fmtAnsTerm(d,"y",false)})(${fmtAnsTerm(w,"m",true)}+${a}x${fmtAnsTerm(b,"y",false)})`, steps: [`\\( = ${fmtTerm(w,"m",true)}(${c}x ${fmtTerm(d,"y",false)}) + (${a}x ${fmtTerm(b,"y",false)})(${c}x ${fmtTerm(d,"y",false)}) \\)`, `\\( = (${c}x ${fmtTerm(d,"y",false)})(${fmtTerm(w,"m",true)} + ${a}x ${fmtTerm(b,"y",false)}) \\)`], scored: false }
+            ]};
+        }
+
+        function generateType7() {
+            let a = randInt(2, 6), sign = Math.random() > 0.5 ? 1 : -1, c = randInt(2, 6), d = randInt(2, 6) * (Math.random() > 0.5 ? 1 : -1);
+            while(gcd(c, Math.abs(d)) !== 1) d = randInt(2, 6) * (Math.random() > 0.5 ? 1 : -1);
+            return { type: "Type VII (Diff of Squares Complex)", qText: "", parts: [
+                { label: '(a)', qText: `\\( ${a*a}x^2 ${fmtTerm(sign*2*a, "x", false)} + 1 \\)`, ans: `(${a}x${fmtAnsTerm(sign,"",false)})²`, steps: [`\\( = (${a}x ${fmtTerm(sign,"",false)})^2 \\)`], scored: false },
+                { label: '(b)', qText: `\\( (${c}x ${fmtTerm(d,"m",false)})^2 - ${a*a}x^2 ${fmtTerm(-sign*2*a, "x", false)} - 1 \\)`, ans: `(${fmtAnsTerm(c+a,"x",true)}${fmtAnsTerm(d,"m",false)}${fmtAnsTerm(sign,"",false)})(${fmtAnsTerm(c-a,"x",true)}${fmtAnsTerm(d,"m",false)}${fmtAnsTerm(-sign,"",false)})`, steps: [`\\( = (${c}x ${fmtTerm(d,"m",false)})^2 - (${a}x ${fmtTerm(sign,"",false)})^2 \\)`, `\\( = [(${c}x ${fmtTerm(d,"m",false)}) + (${a}x ${fmtTerm(sign,"",false)})][(${c}x ${fmtTerm(d,"m",false)}) - (${a}x ${fmtTerm(sign,"",false)})] \\)`, `\\( = (${fmtTerm(c+a,"x",true)} ${fmtTerm(d,"m",false)} ${fmtTerm(sign,"",false)})(${fmtTerm(c-a,"x",true)} ${fmtTerm(d,"m",false)} ${fmtTerm(-sign,"",false)}) \\)`], scored: false }
+            ]};
+        }
+
+        // --- Core Logic ---
+        function generateQuestions() {
+            currentQuestions = [
+                generateType1(), 
+                generateType2(), 
+                generateType3(), 
+                generateType4(), 
+                generateType5(), 
+                generateType6(), 
+                generateType7()
+            ];
+            renderQuestions();
+        }
+
+        function renderQuestions() {
+            const container = document.getElementById('questionsContainer');
+            container.innerHTML = '';
+            activeInputId = null;
+
+            currentQuestions.forEach((q, qIndex) => {
+                let card = document.createElement('div');
+                card.className = "bg-white rounded-xl shadow-sm border border-gray-200 p-4 flex flex-col relative";
+                
+                let header = `<div class="flex justify-between text-xs font-bold text-gray-400 mb-2 border-b pb-1">
+                                <span>${q.type}</span>
+                                <span class="text-gray-300">Q${qIndex + 1}</span>
+                              </div>`;
+                
+                let body = `<div class="flex-1 flex flex-col justify-start">`;
+                if (q.qText) body += `<div class="math-display">${q.qText}</div>`;
+                
+                q.parts.forEach((part, pIndex) => {
+                    body += `<div class="math-display text-sm mt-2">${part.label} ${part.qText}</div>`;
+                    body += `<div class="mt-3 flex flex-col items-center space-y-2">
+                                <div class="flex items-center space-x-2">
+                                    <span class="font-bold text-gray-600 text-sm">Ans =</span>
+                                    <input type="text" id="input_${qIndex}_${pIndex}" class="input-box border-b-2 border-gray-600 focus:outline-none text-lg w-56 pb-1 bg-transparent" onfocus="setActiveInput(this.id)" readonly>
+                                </div>
+                                <button id="btn_check_${qIndex}_${pIndex}" onclick="checkAnswer(${qIndex}, ${pIndex})" class="bg-blue-50 hover:bg-blue-100 text-blue-600 font-bold py-1.5 px-4 rounded-lg w-full transition-colors text-sm">
+                                    檢查答案 Check
+                                </button>
+                                <div id="result_${qIndex}_${pIndex}" class="text-xs font-bold hidden text-center"></div>
+                                <button id="btn_steps_${qIndex}_${pIndex}" onclick="showSteps(${qIndex}, ${pIndex})" class="hidden text-xs text-gray-500 underline hover:text-gray-700">
+                                    顯示步驟 Show Steps
+                                </button>
+                                <div id="steps_${qIndex}_${pIndex}" class="hidden w-full bg-gray-50 p-2 rounded border border-gray-200 mt-1">
+                                    ${part.steps.map(s => `<div class="math-step text-sm">${s}</div>`).join('')}
+                                </div>
+                            </div>`;
+                });
+                body += `</div>`;
+                card.innerHTML = header + body;
+                container.appendChild(card);
+            });
+
+            if (window.MathJax) MathJax.typesetPromise();
+        }
+
+        // --- Normalization & Validation ---
+        function normalizeTerms(str) {
+            if (!str) return "";
+            let s = str.replace(/\s+/g, '');
+            if (s === '-' || s === '+') return s;
+            if (!s.startsWith('+') && !s.startsWith('-')) s = '+' + s;
+            let terms = s.match(/[+-][^+-]*/g) || [];
+            terms.sort();
+            return terms.join('');
+        }
+
+        function normalizeExpression(expr) {
+            let s = expr.replace(/\s+/g, '').replace(/\^2/g, '²');
+            let factorRegex = /\(([^)]+)\)(²)?/g;
+            let sWithoutFactors = s.replace(factorRegex, '');
+            let outside = normalizeTerms(sWithoutFactors);
+            let factors = [];
+            let match;
+            while ((match = factorRegex.exec(s)) !== null) {
+                factors.push(normalizeTerms(match[1]) + (match[2] ? "²" : ""));
+            }
+            if (factors.length === 0) return outside;
+            factors.sort();
+            return outside + '|' + factors.join('|');
+        }
+
+        function isEquivalent(user, correct) {
+            return normalizeExpression(user) === normalizeExpression(correct);
+        }
+
+        function checkAnswer(qIndex, pIndex) {
+            const part = currentQuestions[qIndex].parts[pIndex];
+            const inputEl = document.getElementById(`input_${qIndex}_${pIndex}`);
+            const resultEl = document.getElementById(`result_${qIndex}_${pIndex}`);
+            const stepsBtn = document.getElementById(`btn_steps_${qIndex}_${pIndex}`);
+            const checkBtn = document.getElementById(`btn_check_${qIndex}_${pIndex}`);
+            
+            inputEl.classList.remove('correct-anim', 'wrong-anim');
+            void inputEl.offsetWidth; 
+
+            if (isEquivalent(inputEl.value, part.ans)) {
+                if (!part.scored) {
+                    score += 2; // 答對加2分
+                    part.scored = true;
+                    document.getElementById('scoreDisplay').innerText = score;
+                }
+                resultEl.innerHTML = '<i class="fas fa-check-circle text-green-500"></i> 正確 Correct (+2)';
+                resultEl.className = "text-xs font-bold text-green-600 block text-center";
+                inputEl.classList.add('correct-anim');
+                checkBtn.disabled = true;
+                checkBtn.innerHTML = '已完成 Completed';
+                checkBtn.className = "bg-gray-100 text-gray-400 font-bold py-1.5 px-4 rounded-lg w-full text-sm";
+            } else {
+                if (!part.scored) {
+                    score -= 2; // 答錯扣2分
+                    document.getElementById('scoreDisplay').innerText = score;
+                }
+                resultEl.innerHTML = '<i class="fas fa-times-circle text-red-500"></i> 錯誤 Incorrect (-2)';
+                resultEl.className = "text-xs font-bold text-red-600 block text-center";
+                inputEl.classList.add('wrong-anim');
+                stepsBtn.classList.remove('hidden');
+            }
+        }
+
+        function showSteps(qIndex, pIndex) {
+            document.getElementById(`steps_${qIndex}_${pIndex}`).classList.remove('hidden');
+            document.getElementById(`btn_steps_${qIndex}_${pIndex}`).classList.add('hidden');
+        }
+
+        // --- Keyboard Controls ---
+        function setActiveInput(id) {
+            activeInputId = id;
+            document.querySelectorAll('.input-box').forEach(el => el.classList.remove('input-active'));
+            document.getElementById(id).classList.add('input-active');
+        }
+
+        function typeChar(char) {
+            if (!activeInputId) return;
+            const input = document.getElementById(activeInputId);
+            input.value += char;
+        }
+
+        function deleteChar() {
+            if (!activeInputId) return;
+            const input = document.getElementById(activeInputId);
+            input.value = input.value.slice(0, -1);
+        }
+
+        function moveFocus() {
+            const inputs = Array.from(document.querySelectorAll('.input-box'));
+            let currentIndex = inputs.findIndex(el => el.id === activeInputId);
+            let nextIndex = (currentIndex + 1) % inputs.length;
+            inputs[nextIndex].focus();
+        }
+
+        // --- User Profile (內置自訂 Modal) ---
+        function showAlert(msg) {
+            document.getElementById('customAlertMsg').innerText = msg;
+            document.getElementById('customAlert').classList.remove('hidden');
+        }
+
+        function closeAlert() {
+            document.getElementById('customAlert').classList.add('hidden');
+        }
+
+        function lockProfile() {
+            const name = document.getElementById('nameInput');
+            const classInput = document.getElementById('classInput');
+            const classNoInput = document.getElementById('classNoInput');
+            const date = document.getElementById('dateInput');
+            
+            if(name.value.trim() === '' || classInput.value.trim() === '' || classNoInput.value.trim() === '') {
+                showAlert('請填寫姓名、班別及學號。 Please fill in all fields.');
+                return;
+            }
+            
+            name.disabled = true;
+            classInput.disabled = true;
+            classNoInput.disabled = true;
+            date.disabled = true;
+            
+            const btn = document.getElementById('lockBtn');
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fas fa-lock mr-1"></i> 已鎖定 Locked';
+            btn.className = "bg-gray-400 text-white px-3 py-1.5 rounded-lg font-bold flex items-center shadow text-sm whitespace-nowrap";
+        }
+
+        window.onload = () => {
+            document.getElementById('dateInput').valueAsDate = new Date();
+            generateQuestions();
+        };
+    </script>
+</body>
+</html>
